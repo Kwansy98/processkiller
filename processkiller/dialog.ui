@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1109</width>
-    <height>590</height>
+    <width>929</width>
+    <height>524</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,8 +18,8 @@
     <rect>
      <x>10</x>
      <y>10</y>
-     <width>1071</width>
-     <height>561</height>
+     <width>901</width>
+     <height>501</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="2,2,1">
@@ -75,14 +75,28 @@
       <item>
        <widget class="QPushButton" name="killSelectedButton">
         <property name="text">
-         <string>杀死选中进程</string>
+         <string>根据PID杀进程</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="killSameNameButton">
         <property name="text">
-         <string>杀死选中进程及所有同名进程</string>
+         <string>根据名字杀进程</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="killNoReopenButton">
+        <property name="text">
+         <string>根据名字杀进程且禁止复活</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="clearButton">
+        <property name="text">
+         <string>清空待杀进程列表</string>
         </property>
        </widget>
       </item>
@@ -94,7 +108,7 @@
         <item>
          <widget class="QPushButton" name="searchButton">
           <property name="text">
-           <string>关键字搜索</string>
+           <string>搜索进程</string>
           </property>
          </widget>
         </item>

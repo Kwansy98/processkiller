@@ -20,6 +20,7 @@ SOURCES += \
     dialog.cpp
 
 HEADERS += \
+    UAC.h \
     dialog.h
 
 FORMS += \

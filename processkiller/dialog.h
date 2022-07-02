@@ -27,6 +27,10 @@ private slots:
 
     void on_searchButton_clicked();
 
+    void on_clearButton_clicked();
+
+    void on_killNoReopenButton_clicked();
+
 private:
     Ui::Dialog *ui;
 };

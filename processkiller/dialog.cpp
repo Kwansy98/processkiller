@@ -27,6 +27,7 @@ typedef struct  _PROCESSINFO
     ULONG64 Pids[1024];
     int Cnt;
     BOOLEAN KillSameName;
+    BOOLEAN NoReopen;
 }PROCESSINFO, * PPROCESSINFO;
 
 bool LoadDriver(std::string path, std::string serviceName)
@@ -138,7 +139,13 @@ Dialog::Dialog(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // load driver
+    // 设置窗体最大化和最小化
+    Qt::WindowFlags windowFlag  = Qt::Dialog;
+    windowFlag                  |= Qt::WindowMinimizeButtonHint;
+    windowFlag                  |= Qt::WindowMaximizeButtonHint;
+    windowFlag                  |= Qt::WindowCloseButtonHint;
+
+    setWindowFlags(windowFlag);
 
     // 加载驱动
     char szDriverImagePath[MAX_PATH] = { 0 };
@@ -155,7 +162,7 @@ Dialog::Dialog(QWidget *parent)
 
     // 定时器枚举进程，按照PID排序
     QTimer * timer = new QTimer(this);
-    timer->start(1500);
+    timer->start(1000);
     connect(timer,&QTimer::timeout,[=](){
         ui->allProcesses->clear();
         QStringList processes{};
@@ -195,7 +202,12 @@ Dialog::~Dialog()
 // 单击选中进程
 void Dialog::on_allProcesses_itemClicked(QListWidgetItem *item)
 {
-    ui->processToKill->addItem(item->text());
+    // 不重复添加
+    int len = ui->processToKill->findItems(item->text(),Qt::MatchContains).length();
+    if (len == 0)
+    {
+        ui->processToKill->addItem(item->text());
+    }
 }
 
 // 单击移除进程
@@ -205,7 +217,7 @@ void Dialog::on_processToKill_itemClicked(QListWidgetItem *item)
     ui->processToKill->takeItem(ui->processToKill->currentIndex().row());
 }
 
-// kill selected process
+// 杀死选中进程PID
 void Dialog::on_killSelectedButton_clicked()
 {
     HANDLE hDevice = CreateFileA(_SYM_NAME, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -252,7 +264,7 @@ void Dialog::on_killSelectedButton_clicked()
     }
 }
 
-// kill selected process and all same name process
+// 杀死选中进程和同名进程
 void Dialog::on_killSameNameButton_clicked()
 {
     HANDLE hDevice = CreateFileA(_SYM_NAME, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -299,28 +311,76 @@ void Dialog::on_killSameNameButton_clicked()
     }
 }
 
+// 关键字搜索
 void Dialog::on_searchButton_clicked()
 {
     QString keyword = ui->processNameKeyword->text();
-
-    QStringList processes{};
-    PROCESSENTRY32 pe32;
-    pe32.dwSize = sizeof(pe32);
-    HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
-    if(hProcessSnap == INVALID_HANDLE_VALUE)
+    auto foundProcesses = ui->allProcesses->findItems(keyword,Qt::MatchContains);
+    for (int i = 0; i < foundProcesses.length(); i++)
     {
-        return;
-    }
-    BOOL bMore = Process32First(hProcessSnap,&pe32);
-    while(bMore)
-    {
-        QString s = QString("%1").arg(pe32.th32ProcessID) + " " + QString::fromWCharArray(pe32.szExeFile);
-        if (s.toUpper().contains(keyword.toUpper()))
+        QString spid = foundProcesses[i]->text().split(" ")[0];
+        QString nopid = foundProcesses[i]->text().replace(spid+" ","");
+        if (!nopid.toUpper().contains(keyword.toUpper()))
         {
-            processes.append(s);
+            continue;
+        }
+        int len = ui->processToKill->findItems(foundProcesses[i]->text(),Qt::MatchContains).length();
+        if (len == 0)
+        {
+            ui->processToKill->addItem(foundProcesses[i]->text());
+        }
+    }
+}
+
+// clear
+void Dialog::on_clearButton_clicked()
+{
+    ui->processToKill->clear();
+}
+
+void Dialog::on_killNoReopenButton_clicked()
+{
+    HANDLE hDevice = CreateFileA(_SYM_NAME, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (!hDevice)
+    {
+        DWORD ErrorCode = GetLastError();
+        QMessageBox msg;
+        msg.setText("ERROR");
+        msg.setInformativeText("open device failed: " + QString::number(ErrorCode));
+        msg.exec();
+    }
+    else
+    {
+        PROCESSINFO info = { 0 };
+        info.Cnt = 0;
+        info.KillSameName = 1;
+        info.NoReopen = 1;
+
+        for (int i = 0; i < ui->processToKill->count(); i++)
+        {
+            ULONG64 pid = ui->processToKill->item(i)->text().split(" ")[0].toULongLong();
+            info.Pids[i] = pid;
+            info.Cnt++;
         }
 
-        bMore = Process32Next(hProcessSnap,&pe32);
+        CMD xxx;
+        xxx.code = KILL_PROCESS;
+        xxx.in = (ULONG64)&info;
+        xxx.inLen = sizeof(PROCESSINFO);
+        xxx.out = 0;
+        xxx.outLen = 0;
+
+        ULONG retLen = 0;
+        BOOL isSuccess = DeviceIoControl(hDevice, MY_CTL_CODE, &xxx, sizeof(CMD), &xxx, sizeof(ULONG_PTR), &retLen, 0);
+        if (!isSuccess)
+        {
+            DWORD ErrorCode = GetLastError();
+            QMessageBox msg;
+            msg.setText("ERROR");
+            msg.setInformativeText("DeviceIoControl failed: " + QString::number(ErrorCode));
+            msg.exec();
+        }
+        CloseHandle(hDevice);
+        ui->processToKill->clear();
     }
-    ui->processToKill->addItems(processes);
 }
