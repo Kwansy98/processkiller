@@ -15,7 +15,7 @@
 VOID KillThreadCallback(IN PETHREAD Thread, IN PVOID Context);
 VOID KillProcessCallback(IN PEPROCESS Process, IN PVOID Context);
 
-// Í¨ÓÃÍ¨ĞÅ°ü
+// é€šç”¨é€šä¿¡åŒ…
 typedef struct  _CMD
 {
 	ULONG64 code;
@@ -25,7 +25,7 @@ typedef struct  _CMD
 	ULONG64  outLen;
 }CMD, * PCMD;
 
-// ×Ô¶¨ÒåÍ¨ĞÅÊı¾İ
+// è‡ªå®šä¹‰é€šä¿¡æ•°æ®
 
 typedef struct  _PROCESSINFO
 {
@@ -35,7 +35,7 @@ typedef struct  _PROCESSINFO
 	BOOLEAN NoReopen;
 }PROCESSINFO, * PPROCESSINFO;
 
-// ºÚÃûµ¥ÖĞµÄ½ø³ÌÒ»´´½¨¾ÍÉ±µô
+// é»‘åå•ä¸­çš„è¿›ç¨‹ä¸€åˆ›å»ºå°±æ€æ‰
 #define MAX_BLACKLIST_LEN 400
 UNICODE_STRING ProcessBlackList[MAX_BLACKLIST_LEN] = { 0 };
 int ProcessBlackListCnt = 0;
@@ -79,7 +79,7 @@ VOID InsertBlackListProcess(PUNICODE_STRING Name)
 	KeReleaseSpinLock(&ProcessBlackListLock, irql);
 }
 
-// Ä¬ÈÏ»Øµ÷º¯Êı£¬½ö½öÊÇ·µ»Ø³É¹¦
+// é»˜è®¤å›è°ƒå‡½æ•°ï¼Œä»…ä»…æ˜¯è¿”å›æˆåŠŸ
 NTSTATUS DefDispatch(
 	_In_ struct _DEVICE_OBJECT* DeviceObject,
 	_Inout_ struct _IRP* Irp
@@ -96,11 +96,11 @@ NTSTATUS Dispatch(
 	_Inout_ struct _IRP* Irp
 )
 {
-	PIO_STACK_LOCATION io = IoGetCurrentIrpStackLocation(Irp); // »ñÈ¡µ±Ç°Éè±¸Õ»¿Õ¼ä
-	// Èç¹ûÊÇÎÒÃÇ×Ô¶¨ÒåµÄ¿ØÖÆÂë£¬²ÅÈ¥´¦Àí£¬ÎÒÃÇÖ»ÓĞÒ»ÖÖ¿ØÖÆÂë£¬ÆäËû¶«Î÷ÓĞÎÒÃÇ×Ô¼º¿ØÖÆ£¬²»¹ı¶ÈÒÀÀµÎ¢Èí
+	PIO_STACK_LOCATION io = IoGetCurrentIrpStackLocation(Irp); // è·å–å½“å‰è®¾å¤‡æ ˆç©ºé—´
+	// å¦‚æœæ˜¯æˆ‘ä»¬è‡ªå®šä¹‰çš„æ§åˆ¶ç ï¼Œæ‰å»å¤„ç†ï¼Œæˆ‘ä»¬åªæœ‰ä¸€ç§æ§åˆ¶ç ï¼Œå…¶ä»–ä¸œè¥¿æœ‰æˆ‘ä»¬è‡ªå·±æ§åˆ¶ï¼Œä¸è¿‡åº¦ä¾èµ–å¾®è½¯
 	if (io->Parameters.DeviceIoControl.IoControlCode == MY_CTL_CODE)
 	{
-		// Èç¹û²»ÖªµÀR3ÓÃÊ²Ã´·½Ê½´«¹ıÀ´£¬Ò²¿ÉÒÔÏñÏÂÃæÕâÑùÕâÑùÍ¨ÓÃ´¦Àí
+		// å¦‚æœä¸çŸ¥é“R3ç”¨ä»€ä¹ˆæ–¹å¼ä¼ è¿‡æ¥ï¼Œä¹Ÿå¯ä»¥åƒä¸‹é¢è¿™æ ·è¿™æ ·é€šç”¨å¤„ç†
 		PCMD pcmd = NULL;
 		if (Irp->MdlAddress != NULL)
 		{
@@ -115,7 +115,7 @@ NTSTATUS Dispatch(
 			pcmd = (PCMD)Irp->AssociatedIrp.SystemBuffer;
 		}
 
-		// Ê¹ÓÃ×Ô¶¨ÒåÍ¨ĞÅ°üÀàCMDÖĞ¸ø¶¨µÄ¿ØÖÆÂë
+		// ä½¿ç”¨è‡ªå®šä¹‰é€šä¿¡åŒ…ç±»CMDä¸­ç»™å®šçš„æ§åˆ¶ç 
 		switch (pcmd->code)
 		{
 		case KILL_PROCESS:
@@ -126,20 +126,20 @@ NTSTATUS Dispatch(
 			{
 				for (int i = 0; i < info->Cnt; i++)
 				{
-					DbgPrintEx(77, 0, "É±PID: %lld\r\n", info->Pids[i]);
+					DbgPrintEx(77, 0, "æ€PID: %lld\r\n", info->Pids[i]);
 					PEPROCESS ProcessToKill = NULL;
 					NTSTATUS st = PsLookupProcessByProcessId((HANDLE)info->Pids[i], &ProcessToKill);
 					if (!NT_SUCCESS(st))
 					{
 						continue;
 					}
-					// ÅÅ³ı²»Õı³£×´Ì¬µÄ½ø³Ì
+					// æ’é™¤ä¸æ­£å¸¸çŠ¶æ€çš„è¿›ç¨‹
 					if (PsGetProcessExitStatus(ProcessToKill) != STATUS_PENDING)
 					{
 						ObDereferenceObject(ProcessToKill);
 						continue;
 					}
-					// »ñÈ¡BaseName
+					// è·å–BaseName
 					UNICODE_STRING BaseName = { 0 };
 					EzGetProcessBaseName(ProcessToKill, &BaseName);
 					ObDereferenceObject(ProcessToKill);
@@ -155,14 +155,14 @@ NTSTATUS Dispatch(
 			{
 				for (int i = 0; i < info->Cnt; i++)
 				{
-					DbgPrintEx(77, 0, "É±PID: %lld\r\n", info->Pids[i]);
+					DbgPrintEx(77, 0, "æ€PID: %lld\r\n", info->Pids[i]);
 					PEPROCESS ProcessToKill = NULL;
 					NTSTATUS st = PsLookupProcessByProcessId((HANDLE)info->Pids[i], &ProcessToKill);
 					if (!NT_SUCCESS(st))
 					{
 						continue;
 					}
-					// ÅÅ³ı²»Õı³£×´Ì¬µÄ½ø³Ì
+					// æ’é™¤ä¸æ­£å¸¸çŠ¶æ€çš„è¿›ç¨‹
 					if (PsGetProcessExitStatus(ProcessToKill) != STATUS_PENDING)
 					{
 						ObDereferenceObject(ProcessToKill);
@@ -180,19 +180,19 @@ NTSTATUS Dispatch(
 	return STATUS_SUCCESS;
 }
 
-// ±éÀúÏß³Ì»Øµ÷£¬ÕÒµ½Ò»¸öÉ±Ò»¸ö
+// éå†çº¿ç¨‹å›è°ƒï¼Œæ‰¾åˆ°ä¸€ä¸ªæ€ä¸€ä¸ª
 VOID KillThreadCallback(IN PETHREAD Thread, IN PVOID Context)
 {
 	EzPspTerminateThreadByPointer(Thread, 0, TRUE);
 }
 
-// ±éÀú½ø³Ì»Øµ÷£¬¼ûÒ»¸öÉ±Ò»¸ö
+// éå†è¿›ç¨‹å›è°ƒï¼Œè§ä¸€ä¸ªæ€ä¸€ä¸ª
 VOID KillProcessCallback(IN PEPROCESS Process, IN PVOID Context)
 {
 	EzEnumThread(Process, KillThreadCallback, NULL);
 }
 
-// ½ø³Ì´´½¨»Øµ÷
+// è¿›ç¨‹åˆ›å»ºå›è°ƒ
 VOID CreateProcessCallback(HANDLE ParentId, HANDLE ProcessId, BOOLEAN Create)
 {
 	if (Create)
@@ -207,7 +207,7 @@ VOID CreateProcessCallback(HANDLE ParentId, HANDLE ProcessId, BOOLEAN Create)
 		st = EzGetProcessBaseName(Process, &BaseName);
 		if (NT_SUCCESS(st))
 		{
-			DbgPrintEx(77, 0, "´´½¨½ø³Ì: %wZ\r\n", &BaseName);
+			DbgPrintEx(77, 0, "åˆ›å»ºè¿›ç¨‹: %wZ\r\n", &BaseName);
 			KIRQL irql = { 0 };
 			KeAcquireSpinLock(&ProcessBlackListLock, &irql);
 			for (int i = 0; i < ProcessBlackListCnt; i++)
@@ -243,21 +243,13 @@ VOID Unload(PDRIVER_OBJECT pDriver)
 NTSTATUS DriverEntry(PDRIVER_OBJECT pDriver, PUNICODE_STRING pReg)
 {
 
-	//PCSTR TQNames[] = {
-	//	"DlpAppData.exe",
-	//	"TQClient.exe",
-	//	"TQDefender.exe",
-	//	"TQTray.exe",
-	//	"TQUpdate.exe",
-	//	"TQSafeUI.exe",
-	//	"NACLdis.exe",
-	//};
+
 
 	NTSTATUS status;
 	status = PsSetCreateProcessNotifyRoutine(CreateProcessCallback, FALSE);
 	if (!NT_SUCCESS(status))
 	{
-		DbgPrintEx(77, 0, "´´½¨½ø³Ì»Øµ÷Ê§°Ü: %x\r\n", status);
+		DbgPrintEx(77, 0, "åˆ›å»ºè¿›ç¨‹å›è°ƒå¤±è´¥: %x\r\n", status);
 		return status;
 	}
 
@@ -266,7 +258,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pDriver, PUNICODE_STRING pReg)
 
 	UNICODE_STRING UnSymName = { 0 };
 	RtlInitUnicodeString(&UnSymName, _SYM_NAME);
-	//µÚÒ»²½´´½¨Éè±¸¶ÔÏó
+	//ç¬¬ä¸€æ­¥åˆ›å»ºè®¾å¤‡å¯¹è±¡
 	PDEVICE_OBJECT pDevice = NULL;
 	NTSTATUS st = IoCreateDevice(pDriver, 0, &UnDeviceName, FILE_DEVICE_UNKNOWN, FILE_DEVICE_SECURE_OPEN, FALSE, &pDevice);
 
@@ -275,7 +267,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pDriver, PUNICODE_STRING pReg)
 		return STATUS_UNSUCCESSFUL;
 	}
 
-	//µÚ¶ş²½´´½¨·ûºÅÁ´½Ó
+	//ç¬¬äºŒæ­¥åˆ›å»ºç¬¦å·é“¾æ¥
 	st = IoCreateSymbolicLink(&UnSymName, &UnDeviceName);
 
 	if (!NT_SUCCESS(st))
@@ -284,10 +276,10 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pDriver, PUNICODE_STRING pReg)
 		return STATUS_UNSUCCESSFUL;
 	}
 
-	//µÚÈı²½ÉèÖÃÉè±¸±êÖ¾  È¥µô³õÊ¼»¯±í
+	//ç¬¬ä¸‰æ­¥è®¾ç½®è®¾å¤‡æ ‡å¿—  å»æ‰åˆå§‹åŒ–è¡¨
 	pDevice->Flags &= ~DO_DEVICE_INITIALIZING;
 
-	//µÚËÄ²½ Ê¹ÓÃÊ²Ã´ÄÚ´æ
+	//ç¬¬å››æ­¥ ä½¿ç”¨ä»€ä¹ˆå†…å­˜
 	pDevice->Flags |= DO_BUFFERED_IO;
 
 	pDriver->MajorFunction[IRP_MJ_CREATE] = DefDispatch;
