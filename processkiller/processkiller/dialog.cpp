@@ -178,6 +178,7 @@ Dialog::Dialog(QWidget *parent)
         while(bMore)
         {
             QString s = QString("%1").arg(pe32.th32ProcessID) + " " + QString::fromWCharArray(pe32.szExeFile);
+
             processes.append(s);
             bMore = Process32Next(hProcessSnap,&pe32);
         }
@@ -207,7 +208,12 @@ void Dialog::on_allProcesses_itemClicked(QListWidgetItem *item)
     int len = ui->processToKill->findItems(item->text(),Qt::MatchContains).length();
     if (len == 0)
     {
-        ui->processToKill->addItem(item->text());
+
+        ui->processToKill->setIconSize(item->sizeHint());
+
+        auto icoitem = new QListWidgetItem(QIcon("frog.ico"),item->text());
+        ui->processToKill->insertItem(0,icoitem);
+//        ui->processToKill->addItem(item->text());
     }
 }
 
